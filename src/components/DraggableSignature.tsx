@@ -109,7 +109,7 @@ export function DraggableSignature({
         initial={{ scale: 0.5, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: "spring", stiffness: 300, damping: 25 }}
-        className="absolute border-2 border-blue-500 bg-card/50 select-none group"
+        className="absolute border-2 border-ring bg-card/50 select-none group"
         style={{
           left: position.x,
           top: position.y,
@@ -131,7 +131,7 @@ export function DraggableSignature({
           initial={{ y: 5, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.2 }}
-          className="absolute -top-8 left-1/2 -translate-x-1/2 bg-blue-500 text-white text-xs px-2 py-0.5 rounded flex items-center gap-1 whitespace-nowrap"
+          className="absolute -top-8 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded flex items-center gap-1 whitespace-nowrap"
         >
           <Move className="h-3 w-3" />
           Drag to position
@@ -142,7 +142,7 @@ export function DraggableSignature({
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ delay: 0.3, type: "spring" }}
-          className="absolute -bottom-1.5 -right-1.5 w-4 h-4 bg-blue-500 rounded-full cursor-se-resize border-2 border-white shadow"
+          className="absolute -bottom-1.5 -right-1.5 w-4 h-4 bg-primary rounded-full cursor-se-resize border-2 border-background shadow"
           onMouseDown={handleResizeMouseDown}
         />
 
@@ -155,7 +155,7 @@ export function DraggableSignature({
         >
           <Button
             size="sm"
-            variant="destructive"
+            variant="outline"
             className="h-7 px-2 text-xs"
             onClick={(e) => {
               e.stopPropagation()
@@ -167,7 +167,7 @@ export function DraggableSignature({
           </Button>
           <Button
             size="sm"
-            className="h-7 px-2 text-xs bg-blue-500 hover:bg-blue-600"
+            className="h-7 px-2 text-xs"
             onClick={(e) => {
               e.stopPropagation()
               handleConfirm()

@@ -49,6 +49,8 @@
   --color-border: #e5e5e5;
   --color-input: #e5e5e5;
   --color-ring: #a3a3a3;
+  --scrollbar-thumb: rgba(0, 0, 0, 0.15);
+  --scrollbar-thumb-hover: rgba(0, 0, 0, 0.25);
 }
 
 @keyframes marquee {
@@ -60,10 +62,15 @@ html {
   scroll-behavior: smooth;
 }
 
+:root {
+  --scrollbar-thumb: rgba(255, 255, 255, 0.15);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.25);
+}
+
 * {
   @apply border-border select-none;
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
 }
 
 input, textarea, [contenteditable] {
@@ -86,12 +93,12 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--scrollbar-thumb);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.25);
+  background: var(--scrollbar-thumb-hover);
 }
 
 /* Gradient heading text */
@@ -104,4 +111,34 @@ body {
 
 .light .gradient-text {
   background: linear-gradient(to right, #111, #555, #999) !important;
+}
+
+/* Signature pad checkerboard (transparency indicator) */
+.checkerboard-bg {
+  background-image:
+    linear-gradient(45deg, #2a2a2a 25%, transparent 25%),
+    linear-gradient(-45deg, #2a2a2a 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #2a2a2a 75%),
+    linear-gradient(-45deg, transparent 75%, #2a2a2a 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+  background-color: #1e1e1e;
+}
+
+.light .checkerboard-bg {
+  background-image:
+    linear-gradient(45deg, #d4d4d4 25%, transparent 25%),
+    linear-gradient(-45deg, #d4d4d4 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #d4d4d4 75%),
+    linear-gradient(-45deg, transparent 75%, #d4d4d4 75%);
+  background-color: #e5e5e5;
+}
+
+/* Tiptap editor prose styling */
+.prose {
+  color: var(--color-card-foreground);
+}
+
+.prose p.is-editor-empty:first-child::before {
+  color: var(--color-muted-foreground);
 }
