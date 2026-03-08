@@ -12,6 +12,8 @@ import { exportToDocx } from "@/lib/export-docx"
 import { saveAs } from "file-saver"
 import { Loader2 } from "lucide-react"
 
+declare const __COMMIT_HASH__: string
+
 export default function App() {
   const {
     pdf,
@@ -373,6 +375,12 @@ export default function App() {
           />
         )}
       </AnimatePresence>
+
+      {pdf && viewerReady && (
+        <div className="fixed bottom-2 left-3 text-[10px] text-muted-foreground/50 font-mono select-text pointer-events-none z-10">
+          {__COMMIT_HASH__}
+        </div>
+      )}
     </div>
   )
 }
