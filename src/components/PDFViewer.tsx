@@ -1,8 +1,17 @@
 import { useRef, useEffect, useState, useCallback } from "react"
 import type { PDFDocumentProxy } from "pdfjs-dist"
-import { renderPage, type Annotation } from "@/lib/pdf-engine"
+import { renderPage, type Annotation, type TextAnnotation } from "@/lib/pdf-engine"
 import { DraggableSignature } from "@/components/DraggableSignature"
+import { DraggableText } from "@/components/DraggableText"
 import type { Tool } from "@/hooks/usePDF"
+
+const FONT_CSS: Record<string, string> = {
+  "Inter": "Inter, Helvetica, Arial, sans-serif",
+  "Helvetica": "Helvetica, Arial, sans-serif",
+  "Times New Roman": "'Times New Roman', Times, serif",
+  "Courier New": "'Courier New', Courier, monospace",
+  "Georgia": "Georgia, 'Times New Roman', serif",
+}
 
 interface PDFViewerProps {
   pdf: PDFDocumentProxy
@@ -14,10 +23,15 @@ interface PDFViewerProps {
   highlightColor: string
   penSize: number
   onAddAnnotation: (annotation: Annotation) => void
+  onUpdateAnnotation: (id: string, updates: Partial<Annotation>) => void
+  onRemoveAnnotation: (id: string) => void
   onRequestSignature: () => void
   onRequestTextEditor: (x: number, y: number) => void
+  onRequestEditText: (annotation: { type: "text" } & TextAnnotation) => void
   pendingSignature: string | null
   onSignaturePlaced: () => void
+  pendingText: ({ type: "text" } & TextAnnotation) | null
+  onTextPlaced: () => void
 }
 
 export function PDFViewer({
@@ -30,10 +44,15 @@ export function PDFViewer({
   highlightColor,
   penSize,
   onAddAnnotation,
+  onUpdateAnnotation,
+  onRemoveAnnotation,
   onRequestSignature,
   onRequestTextEditor,
+  onRequestEditText,
   pendingSignature,
   onSignaturePlaced,
+  pendingText,
+  onTextPlaced,
 }: PDFViewerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const overlayRef = useRef<HTMLCanvasElement>(null)
@@ -42,6 +61,7 @@ export function PDFViewer({
   const [isDrawing, setIsDrawing] = useState(false)
   const [currentPath, setCurrentPath] = useState<{ x: number; y: number }[]>([])
   const [currentHighlightPath, setCurrentHighlightPath] = useState<{ x: number; y: number }[]>([])
+  const [selectedTextId, setSelectedTextId] = useState<string | null>(null)
 
 
   // Render PDF page
@@ -52,7 +72,7 @@ export function PDFViewer({
     })
   }, [pdf, currentPage, scale])
 
-  // Draw annotations overlay
+  // Draw annotations overlay (non-text annotations + signature images)
   useEffect(() => {
     const overlay = overlayRef.current
     if (!overlay) return
@@ -70,11 +90,10 @@ export function PDFViewer({
     )
 
     for (const a of pageAnnotations) {
-      if (a.type === "text") {
-        ctx.font = `${a.fontSize * scale}px sans-serif`
-        ctx.fillStyle = a.color
-        ctx.fillText(a.text, a.x * scale, a.y * scale + a.fontSize * scale)
-      } else if (a.type === "highlight") {
+      // Text annotations are rendered as HTML overlays, skip them on canvas
+      if (a.type === "text") continue
+
+      if (a.type === "highlight") {
         ctx.strokeStyle = a.color
         ctx.globalAlpha = 0.3
         ctx.lineWidth = a.lineWidth * scale
@@ -157,7 +176,7 @@ export function PDFViewer({
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
-      if (pendingSignature) return
+      if (pendingSignature || pendingText || selectedTextId) return
 
       const coords = getCoords(e.clientX, e.clientY)
 
@@ -175,7 +194,7 @@ export function PDFViewer({
         onRequestSignature()
       }
     },
-    [activeTool, pendingSignature, getCoords, onRequestSignature, onRequestTextEditor]
+    [activeTool, pendingSignature, pendingText, selectedTextId, getCoords, onRequestSignature, onRequestTextEditor]
   )
 
   const handlePointerMove = useCallback(
@@ -240,8 +259,36 @@ export function PDFViewer({
     [pendingSignature, currentPage, onAddAnnotation, onSignaturePlaced]
   )
 
+  const handleTextConfirm = useCallback(
+    (annotationId: string, x: number, y: number, width: number, height: number) => {
+      onUpdateAnnotation(annotationId, { x, y, width, height })
+      setSelectedTextId(null)
+    },
+    [onUpdateAnnotation]
+  )
+
+  const handleNewTextConfirm = useCallback(
+    (x: number, y: number, width: number, height: number) => {
+      if (!pendingText) return
+      onAddAnnotation({
+        ...pendingText,
+        x,
+        y,
+        width,
+        height,
+      })
+      onTextPlaced()
+    },
+    [pendingText, onAddAnnotation, onTextPlaced]
+  )
+
+  // Get text annotations for current page
+  const pageTextAnnotations = annotations.filter(
+    (a) => a.type === "text" && a.pageIndex === currentPage - 1
+  ) as ({ type: "text" } & TextAnnotation)[]
+
   const cursorClass =
-    pendingSignature
+    pendingSignature || pendingText
       ? "cursor-default"
       : activeTool === "draw"
         ? "cursor-crosshair"
@@ -283,6 +330,75 @@ export function PDFViewer({
             }
           }}
         />
+
+        {/* Rendered text annotations as HTML overlays (clickable to select) */}
+        {pageTextAnnotations.map((a) =>
+          selectedTextId === a.id ? null : (
+            <div
+              key={a.id}
+              className={`absolute overflow-hidden ${activeTool === "select" ? "cursor-pointer hover:outline hover:outline-2 hover:outline-ring/50 hover:rounded-sm" : "pointer-events-none"}`}
+              style={{
+                left: a.x * scale,
+                top: a.y * scale,
+                width: a.width ? a.width * scale : undefined,
+                height: a.height ? a.height * scale : undefined,
+                fontSize: `${a.fontSize * scale}px`,
+                fontFamily: FONT_CSS[a.fontFamily] || FONT_CSS["Inter"],
+                color: a.color,
+                lineHeight: 1.3,
+                whiteSpace: "pre-wrap",
+                wordBreak: "break-word",
+                padding: `${1 * scale}px`,
+              }}
+              onClick={(e) => {
+                if (activeTool !== "select") return
+                e.stopPropagation()
+                setSelectedTextId(a.id)
+              }}
+            >
+              {a.text}
+            </div>
+          )
+        )}
+
+        {/* Draggable text overlay for selected existing text */}
+        {selectedTextId && (() => {
+          const ann = pageTextAnnotations.find((a) => a.id === selectedTextId)
+          if (!ann) return null
+          return (
+            <DraggableText
+              annotation={ann}
+              containerWidth={canvasSize.width}
+              containerHeight={canvasSize.height}
+              scale={scale}
+              onConfirm={(x, y, w, h) => handleTextConfirm(ann.id, x, y, w, h)}
+              onEdit={() => {
+                setSelectedTextId(null)
+                onRequestEditText(ann)
+              }}
+              onDelete={() => {
+                onRemoveAnnotation(ann.id)
+                setSelectedTextId(null)
+              }}
+              onCancel={() => setSelectedTextId(null)}
+            />
+          )
+        })()}
+
+        {/* Draggable text overlay for new pending text */}
+        {pendingText && (
+          <DraggableText
+            annotation={pendingText}
+            containerWidth={canvasSize.width}
+            containerHeight={canvasSize.height}
+            scale={scale}
+            isNew
+            onConfirm={handleNewTextConfirm}
+            onEdit={() => {}}
+            onDelete={() => onTextPlaced()}
+            onCancel={onTextPlaced}
+          />
+        )}
 
         {/* Draggable signature overlay */}
         {pendingSignature && (

@@ -6,7 +6,7 @@ import { PDFViewer } from "@/components/PDFViewer"
 import { LandingPage } from "@/components/LandingPage"
 import { SignaturePad } from "@/components/SignaturePad"
 import { TextEditor } from "@/components/TextEditor"
-import { exportToPDF, exportToPNG, exportToJPG } from "@/lib/pdf-engine"
+import { exportToPDF, exportToPNG, exportToJPG, type TextAnnotation } from "@/lib/pdf-engine"
 import { ConfirmDialog } from "@/components/ConfirmDialog"
 import { exportToDocx } from "@/lib/export-docx"
 import { saveAs } from "file-saver"
@@ -37,6 +37,8 @@ export default function App() {
     closePdf,
     goToPage,
     addAnnotation,
+    removeAnnotation,
+    updateAnnotation,
     undo,
     redo,
     canUndo,
@@ -52,6 +54,12 @@ export default function App() {
   const [showCloseConfirm, setShowCloseConfirm] = useState(false)
   const [pendingAction, setPendingAction] = useState<"close" | "open" | null>(null)
   const [isDark, setIsDark] = useState(true)
+
+  // Text editing state
+  const [showTextEditor, setShowTextEditor] = useState(false)
+  const [textPlacement, setTextPlacement] = useState<{ x: number; y: number } | null>(null)
+  const [pendingText, setPendingText] = useState<({ type: "text" } & TextAnnotation) | null>(null)
+  const [editingTextAnnotation, setEditingTextAnnotation] = useState<({ type: "text" } & TextAnnotation) | null>(null)
 
   // Apply theme class to document
   useEffect(() => {
@@ -128,9 +136,6 @@ export default function App() {
     }
   }, [activeTool])
 
-  const [showTextEditor, setShowTextEditor] = useState(false)
-  const [textPlacement, setTextPlacement] = useState<{ x: number; y: number } | null>(null)
-
   const handleOpenFile = useCallback(() => {
     handleOpenFileWithConfirm()
   }, [handleOpenFileWithConfirm])
@@ -197,30 +202,56 @@ export default function App() {
     }
   }, [pdf, fileName])
 
+  // New text: click on page -> TextEditor opens -> creates pending text for dragging
   const handleRequestTextEditor = useCallback((x: number, y: number) => {
     setTextPlacement({ x, y })
     setShowTextEditor(true)
+    setEditingTextAnnotation(null)
   }, [])
 
+  // Save from text editor (new text)
   const handleTextSave = useCallback(
-    (_html: string, plainText: string) => {
-      if (textPlacement) {
-        addAnnotation({
+    (_html: string, plainText: string, fontFamily: string, fontSize: number) => {
+      if (editingTextAnnotation) {
+        // Editing existing annotation
+        updateAnnotation(editingTextAnnotation.id, {
+          text: plainText,
+          fontFamily,
+          fontSize,
+          color: textColor,
+        })
+        setEditingTextAnnotation(null)
+        setActiveTool("select")
+      } else if (textPlacement) {
+        // New text annotation - create pending text for drag placement
+        const newAnnotation: { type: "text" } & TextAnnotation = {
           type: "text",
           id: crypto.randomUUID(),
           pageIndex: currentPage - 1,
           x: textPlacement.x,
           y: textPlacement.y,
+          width: 150,
+          height: Math.max(fontSize * 1.5, 24),
           text: plainText,
-          fontSize: 14,
+          fontSize,
+          fontFamily,
           color: textColor,
-        })
+        }
+        setPendingText(newAnnotation)
+        setActiveTool("select")
       }
       setShowTextEditor(false)
       setTextPlacement(null)
     },
-    [textPlacement, currentPage, textColor, addAnnotation]
+    [textPlacement, currentPage, textColor, editingTextAnnotation, updateAnnotation, setActiveTool]
   )
+
+  // Edit existing text annotation
+  const handleRequestEditText = useCallback((annotation: { type: "text" } & TextAnnotation) => {
+    setEditingTextAnnotation(annotation)
+    setTextPlacement(null)
+    setShowTextEditor(true)
+  }, [])
 
   return (
     <div
@@ -321,10 +352,15 @@ export default function App() {
               highlightColor={highlightColor}
               penSize={penSize}
               onAddAnnotation={addAnnotation}
+              onUpdateAnnotation={updateAnnotation}
+              onRemoveAnnotation={removeAnnotation}
               onRequestSignature={() => setShowSignaturePad(true)}
               onRequestTextEditor={handleRequestTextEditor}
+              onRequestEditText={handleRequestEditText}
               pendingSignature={pendingSignature}
               onSignaturePlaced={() => setPendingSignature(null)}
+              pendingText={pendingText}
+              onTextPlaced={() => setPendingText(null)}
             />
           </motion.div>
         )}
@@ -353,8 +389,12 @@ export default function App() {
             onCancel={() => {
               setShowTextEditor(false)
               setTextPlacement(null)
+              setEditingTextAnnotation(null)
             }}
             initialColor={textColor}
+            initialText={editingTextAnnotation?.text}
+            initialFontFamily={editingTextAnnotation?.fontFamily}
+            initialFontSize={editingTextAnnotation?.fontSize}
           />
         )}
       </AnimatePresence>

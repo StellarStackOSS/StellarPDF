@@ -17,8 +17,11 @@ export interface TextAnnotation {
   pageIndex: number
   x: number
   y: number
+  width: number
+  height: number
   text: string
   fontSize: number
+  fontFamily: string
   color: string
 }
 
@@ -116,12 +119,37 @@ function hexToRgb(hex: string) {
   return rgb(r, g, b)
 }
 
+const FONT_CSS: Record<string, string> = {
+  "Inter": "Inter, Helvetica, Arial, sans-serif",
+  "Helvetica": "Helvetica, Arial, sans-serif",
+  "Times New Roman": "'Times New Roman', Times, serif",
+  "Courier New": "'Courier New', Courier, monospace",
+  "Georgia": "Georgia, 'Times New Roman', serif",
+}
+
+const FONT_MAP: Record<string, typeof StandardFonts[keyof typeof StandardFonts]> = {
+  "Inter": StandardFonts.Helvetica,
+  "Helvetica": StandardFonts.Helvetica,
+  "Times New Roman": StandardFonts.TimesRoman,
+  "Courier New": StandardFonts.Courier,
+  "Georgia": StandardFonts.TimesRoman,
+}
+
 export async function exportToPDF(
   originalBytes: ArrayBuffer,
   annotations: Annotation[]
 ): Promise<Uint8Array> {
   const pdfDoc = await PDFDocument.load(originalBytes)
-  const font = await pdfDoc.embedFont(StandardFonts.Helvetica)
+  const fontCache = new Map<string, Awaited<ReturnType<typeof pdfDoc.embedFont>>>()
+
+  async function getFont(family: string) {
+    const std = FONT_MAP[family] || StandardFonts.Helvetica
+    if (!fontCache.has(std)) {
+      fontCache.set(std, await pdfDoc.embedFont(std))
+    }
+    return fontCache.get(std)!
+  }
+
   const pages = pdfDoc.getPages()
 
   for (const annotation of annotations) {
@@ -130,6 +158,7 @@ export async function exportToPDF(
     const { height: pageHeight } = page.getSize()
 
     if (annotation.type === "text") {
+      const font = await getFont(annotation.fontFamily || "Inter")
       page.drawText(annotation.text, {
         x: annotation.x,
         y: pageHeight - annotation.y - annotation.fontSize,
@@ -201,7 +230,8 @@ export async function exportToPNG(
 
   for (const a of pageAnnotations) {
     if (a.type === "text") {
-      ctx.font = `${a.fontSize * scale}px sans-serif`
+      const cssFont = FONT_CSS[a.fontFamily] || FONT_CSS["Inter"]
+      ctx.font = `${a.fontSize * scale}px ${cssFont}`
       ctx.fillStyle = a.color
       ctx.fillText(a.text, a.x * scale, a.y * scale + a.fontSize * scale)
     } else if (a.type === "highlight") {
@@ -276,7 +306,8 @@ export async function exportToJPG(
 
   for (const a of pageAnnotations) {
     if (a.type === "text") {
-      ctx.font = `${a.fontSize * scale}px sans-serif`
+      const cssFont = FONT_CSS[a.fontFamily] || FONT_CSS["Inter"]
+      ctx.font = `${a.fontSize * scale}px ${cssFont}`
       ctx.fillStyle = a.color
       ctx.fillText(a.text, a.x * scale, a.y * scale + a.fontSize * scale)
     } else if (a.type === "highlight") {

@@ -1,4 +1,4 @@
-import { useCallback } from "react"
+import { useCallback, useState } from "react"
 import { motion } from "motion/react"
 import { useEditor, EditorContent } from "@tiptap/react"
 import StarterKit from "@tiptap/starter-kit"
@@ -17,15 +17,38 @@ import {
   ListOrdered,
   X,
   Check,
+  ChevronDown,
 } from "lucide-react"
 
+const FONTS = [
+  { label: "Inter", value: "Inter" },
+  { label: "Helvetica", value: "Helvetica" },
+  { label: "Times New Roman", value: "Times New Roman" },
+  { label: "Courier New", value: "Courier New" },
+  { label: "Georgia", value: "Georgia" },
+]
+
 interface TextEditorProps {
-  onSave: (html: string, plainText: string) => void
+  onSave: (html: string, plainText: string, fontFamily: string, fontSize: number) => void
   onCancel: () => void
   initialColor?: string
+  initialText?: string
+  initialFontFamily?: string
+  initialFontSize?: number
 }
 
-export function TextEditor({ onSave, onCancel, initialColor = "#000000" }: TextEditorProps) {
+export function TextEditor({
+  onSave,
+  onCancel,
+  initialColor = "#000000",
+  initialText = "",
+  initialFontFamily = "Inter",
+  initialFontSize = 14,
+}: TextEditorProps) {
+  const [fontFamily, setFontFamily] = useState(initialFontFamily)
+  const [fontSize, setFontSize] = useState(initialFontSize)
+  const [showFontMenu, setShowFontMenu] = useState(false)
+
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -34,7 +57,7 @@ export function TextEditor({ onSave, onCancel, initialColor = "#000000" }: TextE
       Color,
       Highlight.configure({ multicolor: true }),
     ],
-    content: "<p></p>",
+    content: initialText ? `<p>${initialText.replace(/\n/g, "</p><p>")}</p>` : "<p></p>",
     editorProps: {
       attributes: {
         class:
@@ -48,9 +71,9 @@ export function TextEditor({ onSave, onCancel, initialColor = "#000000" }: TextE
     const html = editor.getHTML()
     const plainText = editor.getText()
     if (plainText.trim()) {
-      onSave(html, plainText)
+      onSave(html, plainText, fontFamily, fontSize)
     }
-  }, [editor, onSave])
+  }, [editor, onSave, fontFamily, fontSize])
 
   if (!editor) return null
 
@@ -69,7 +92,7 @@ export function TextEditor({ onSave, onCancel, initialColor = "#000000" }: TextE
         className="bg-card text-card-foreground rounded-xl shadow-2xl w-full max-w-lg mx-4"
       >
         <div className="flex items-center justify-between px-4 py-3 border-b">
-          <h3 className="text-sm font-semibold">Add Text</h3>
+          <h3 className="text-sm font-semibold">{initialText ? "Edit Text" : "Add Text"}</h3>
           <Button variant="ghost" size="icon" onClick={onCancel} className="h-7 w-7">
             <X className="h-4 w-4" />
           </Button>
@@ -77,6 +100,60 @@ export function TextEditor({ onSave, onCancel, initialColor = "#000000" }: TextE
 
         {/* Toolbar */}
         <div className="flex items-center gap-0.5 px-3 py-2 border-b flex-wrap">
+          {/* Font selector */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setShowFontMenu(!showFontMenu)}
+              className="flex items-center gap-1 h-7 px-2 rounded text-xs hover:bg-accent transition-colors cursor-pointer border border-border"
+              style={{ fontFamily }}
+            >
+              {fontFamily}
+              <ChevronDown className="h-3 w-3" />
+            </button>
+            {showFontMenu && (
+              <div className="absolute top-full left-0 mt-1 bg-card border border-border rounded-lg shadow-xl z-50 py-1 min-w-[160px]">
+                {FONTS.map((f) => (
+                  <button
+                    key={f.value}
+                    type="button"
+                    onClick={() => {
+                      setFontFamily(f.value)
+                      setShowFontMenu(false)
+                    }}
+                    className={`w-full text-left px-3 py-1.5 text-sm hover:bg-accent transition-colors cursor-pointer ${
+                      fontFamily === f.value ? "bg-secondary text-secondary-foreground" : ""
+                    }`}
+                    style={{ fontFamily: f.value }}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Font size */}
+          <div className="flex items-center border border-border rounded h-7 overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setFontSize((s) => Math.max(8, s - 2))}
+              className="px-1.5 h-full hover:bg-accent transition-colors cursor-pointer text-xs"
+            >
+              -
+            </button>
+            <span className="text-xs px-1.5 min-w-[28px] text-center">{fontSize}</span>
+            <button
+              type="button"
+              onClick={() => setFontSize((s) => Math.min(72, s + 2))}
+              className="px-1.5 h-full hover:bg-accent transition-colors cursor-pointer text-xs"
+            >
+              +
+            </button>
+          </div>
+
+          <div className="w-px h-5 bg-border mx-1" />
+
           <Button
             variant={editor.isActive("bold") ? "secondary" : "ghost"}
             size="icon"
@@ -164,7 +241,7 @@ export function TextEditor({ onSave, onCancel, initialColor = "#000000" }: TextE
           </Button>
           <Button size="sm" onClick={handleSave}>
             <Check className="h-3.5 w-3.5 mr-1" />
-            Place Text
+            {initialText ? "Update Text" : "Place Text"}
           </Button>
         </div>
       </motion.div>

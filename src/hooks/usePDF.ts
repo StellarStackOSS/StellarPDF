@@ -106,6 +106,16 @@ export function usePDF() {
     }))
   }, [])
 
+  const updateAnnotation = useCallback((id: string, updates: Partial<Annotation>) => {
+    setHistory((prev) => ({
+      annotations: prev.annotations.map((a) =>
+        a.id === id ? { ...a, ...updates } as Annotation : a
+      ),
+      undoStack: [...prev.undoStack, prev.annotations],
+      redoStack: [],
+    }))
+  }, [])
+
   const undo = useCallback(() => {
     setHistory((prev) => {
       if (prev.undoStack.length === 0) return prev
@@ -176,6 +186,7 @@ export function usePDF() {
     goToPage,
     addAnnotation,
     removeAnnotation,
+    updateAnnotation,
     undo,
     redo,
     canUndo: history.undoStack.length > 0,
