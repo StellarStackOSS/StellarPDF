@@ -159,7 +159,7 @@ export default function App() {
     if (!fileData.current) return
     try {
       const bytes = await exportToPDF(fileData.current, annotations)
-      const blob = new Blob([bytes], { type: "application/pdf" })
+      const blob = new Blob([bytes as BlobPart], { type: "application/pdf" })
       saveAs(blob, fileName.replace(".pdf", "") + "_edited.pdf")
     } catch (e) {
       console.error("PDF export failed:", e)

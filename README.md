@@ -1,73 +1,97 @@
-# React + TypeScript + Vite
+# StellarPDF
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A fully client-side PDF reader, editor, and signer. No backend, no uploads — everything runs in your browser.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **PDF Viewing** — High-DPI rendering powered by pdfjs-dist with zoom and page navigation
+- **Freehand Drawing** — Draw on any page with configurable pen color and thickness
+- **Text Annotations** — Place text anywhere on a PDF with a rich text editor
+- **Highlighter** — Semi-transparent highlight strokes with adjustable color and size
+- **Signatures** — Draw and place signatures with a dedicated signature pad (color and size picker included)
+- **Image Support** — Open JPG, PNG, and WEBP files (auto-converted to PDF)
+- **Export** — Save as PDF (with annotations baked in), PNG, JPG, or DOCX
+- **Undo / Redo** — Full history stack with keyboard shortcuts (`Ctrl+Z` / `Ctrl+Shift+Z`)
+- **Session Persistence** — Work survives page refreshes via IndexedDB (no server needed)
+- **Offline Ready** — Installable PWA with service worker caching
+- **Dark / Light Mode** — Toggle between themes
 
-## React Compiler
+## Tech Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+| Layer | Technology |
+|-------|-----------|
+| Framework | React 19 + TypeScript |
+| Build | Vite 7 |
+| Styling | Tailwind CSS v4 |
+| PDF Rendering | pdfjs-dist 4.9 |
+| PDF Manipulation | pdf-lib |
+| Rich Text | Tiptap |
+| Animations | Motion (Framer Motion) |
+| Icons | Lucide React |
+| PWA | vite-plugin-pwa + Workbox |
 
-## Expanding the ESLint configuration
+## Getting Started
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### Prerequisites
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+- Node.js 18+
+- npm 9+
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+### Install & Run
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+git clone https://github.com/StellarStackOSS/StellarPDF.git
+cd StellarPDF
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Open [http://localhost:5173](http://localhost:5173) in your browser.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### Build for Production
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm run build
+npm run preview
 ```
+
+The production build outputs to `dist/` and includes the PWA service worker.
+
+## Project Structure
+
+```
+src/
+├── components/
+│   ├── ui/              # Base UI primitives (Button, Tooltip, ColorPicker, etc.)
+│   ├── ConfirmDialog.tsx # Unsaved changes confirmation
+│   ├── DraggableSignature.tsx
+│   ├── LandingPage.tsx  # Marketing landing page
+│   ├── PDFViewer.tsx    # Canvas-based PDF viewer with annotation overlay
+│   ├── SignaturePad.tsx # Signature drawing modal
+│   ├── TextEditor.tsx   # Tiptap rich text editor modal
+│   └── Toolbar.tsx      # Floating toolbar with tools, navigation, export
+├── hooks/
+│   └── usePDF.ts        # Central PDF state management
+├── lib/
+│   ├── export-docx.ts   # PDF-to-DOCX conversion
+│   ├── pdf-engine.ts    # PDF loading, rendering, and export (PDF/PNG/JPG)
+│   ├── persistence.ts   # IndexedDB session storage
+│   └── utils.ts         # Utility functions (cn, etc.)
+└── App.tsx              # Root component
+```
+
+## Keyboard Shortcuts
+
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl/Cmd + Z` | Undo |
+| `Ctrl/Cmd + Shift + Z` | Redo |
+| `Ctrl/Cmd + Y` | Redo |
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+## License
+
+MIT
