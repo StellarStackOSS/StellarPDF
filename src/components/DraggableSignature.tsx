@@ -28,55 +28,65 @@ export function DraggableSignature({
   const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, w: 0, h: 0 })
   const containerRef = useRef<HTMLDivElement>(null)
 
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+  const getClientPos = (e: React.PointerEvent | PointerEvent) => ({
+    x: e.clientX,
+    y: e.clientY,
+  })
+
+  const handlePointerDown = useCallback((e: React.PointerEvent) => {
     e.stopPropagation()
     e.preventDefault()
+    ;(e.target as Element).setPointerCapture(e.pointerId)
+    const pos = getClientPos(e)
     setIsDragging(true)
     setDragOffset({
-      x: e.clientX - position.x,
-      y: e.clientY - position.y,
+      x: pos.x - position.x,
+      y: pos.y - position.y,
     })
   }, [position])
 
-  const handleResizeMouseDown = useCallback((e: React.MouseEvent) => {
+  const handleResizePointerDown = useCallback((e: React.PointerEvent) => {
     e.stopPropagation()
     e.preventDefault()
+    ;(e.target as Element).setPointerCapture(e.pointerId)
+    const pos = getClientPos(e)
     setIsResizing(true)
     setResizeStart({
-      x: e.clientX,
-      y: e.clientY,
+      x: pos.x,
+      y: pos.y,
       w: size.width,
       h: size.height,
     })
   }, [size])
 
   useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
+    const handlePointerMove = (e: PointerEvent) => {
+      const pos = getClientPos(e)
       if (isDragging) {
-        const newX = Math.max(0, Math.min(containerWidth - size.width, e.clientX - dragOffset.x))
-        const newY = Math.max(0, Math.min(containerHeight - size.height, e.clientY - dragOffset.y))
+        const newX = Math.max(0, Math.min(containerWidth - size.width, pos.x - dragOffset.x))
+        const newY = Math.max(0, Math.min(containerHeight - size.height, pos.y - dragOffset.y))
         setPosition({ x: newX, y: newY })
       }
       if (isResizing) {
-        const dx = e.clientX - resizeStart.x
-        const dy = e.clientY - resizeStart.y
+        const dx = pos.x - resizeStart.x
+        const dy = pos.y - resizeStart.y
         const newW = Math.max(80, resizeStart.w + dx)
         const newH = Math.max(30, resizeStart.h + dy)
         setSize({ width: newW, height: newH })
       }
     }
 
-    const handleMouseUp = () => {
+    const handlePointerUp = () => {
       setIsDragging(false)
       setIsResizing(false)
     }
 
     if (isDragging || isResizing) {
-      window.addEventListener("mousemove", handleMouseMove)
-      window.addEventListener("mouseup", handleMouseUp)
+      window.addEventListener("pointermove", handlePointerMove)
+      window.addEventListener("pointerup", handlePointerUp)
       return () => {
-        window.removeEventListener("mousemove", handleMouseMove)
-        window.removeEventListener("mouseup", handleMouseUp)
+        window.removeEventListener("pointermove", handlePointerMove)
+        window.removeEventListener("pointerup", handlePointerUp)
       }
     }
   }, [isDragging, isResizing, dragOffset, resizeStart, containerWidth, containerHeight, size.width, size.height])
@@ -93,7 +103,7 @@ export function DraggableSignature({
   return (
     <div
       ref={containerRef}
-      className="absolute inset-0 z-10"
+      className="absolute inset-0 z-10 touch-none"
       style={{ pointerEvents: "auto" }}
     >
       {/* Dimmed backdrop */}
@@ -109,7 +119,7 @@ export function DraggableSignature({
         initial={{ scale: 0.5, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: "spring", stiffness: 300, damping: 25 }}
-        className="absolute border-2 border-ring bg-card/50 select-none group"
+        className="absolute border-2 border-ring bg-card/50 select-none group touch-none"
         style={{
           left: position.x,
           top: position.y,
@@ -117,7 +127,7 @@ export function DraggableSignature({
           height: size.height,
           cursor: isDragging ? "grabbing" : "grab",
         }}
-        onMouseDown={handleMouseDown}
+        onPointerDown={handlePointerDown}
       >
         <img
           src={dataUrl}
@@ -142,8 +152,8 @@ export function DraggableSignature({
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ delay: 0.3, type: "spring" }}
-          className="absolute -bottom-1.5 -right-1.5 w-4 h-4 bg-primary rounded-full cursor-se-resize border-2 border-background shadow"
-          onMouseDown={handleResizeMouseDown}
+          className="absolute -bottom-1.5 -right-1.5 w-5 h-5 bg-primary rounded-full cursor-se-resize border-2 border-background shadow touch-none"
+          onPointerDown={handleResizePointerDown}
         />
 
         {/* Confirm / Cancel buttons */}

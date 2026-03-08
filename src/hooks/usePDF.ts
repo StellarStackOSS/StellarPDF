@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from "react"
 import type { PDFDocumentProxy } from "pdfjs-dist"
-import { loadPDF, isImageFile, imageToPdfBuffer, type Annotation } from "@/lib/pdf-engine"
+import { loadPDF, type Annotation } from "@/lib/pdf-engine"
 import { saveSession, loadSession, clearSession } from "@/lib/persistence"
 
 export type Tool = "select" | "text" | "draw" | "highlight" | "signature"
@@ -30,12 +30,7 @@ export function usePDF() {
   const fileDataRef = useRef<ArrayBuffer | null>(null)
 
   const openFile = useCallback(async (file: File) => {
-    let buffer: ArrayBuffer
-    if (isImageFile(file)) {
-      buffer = await imageToPdfBuffer(file)
-    } else {
-      buffer = await file.arrayBuffer()
-    }
+    const buffer = await file.arrayBuffer()
     fileDataRef.current = buffer.slice(0)
     const pdfDoc = await loadPDF(buffer)
     setPdf(pdfDoc)

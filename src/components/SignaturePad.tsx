@@ -55,30 +55,31 @@ export function SignaturePad({ onSave, onCancel }: SignaturePadProps) {
     if (mode === "draw") applyStrokeStyle()
   }, [applyStrokeStyle, mode])
 
-  const getPos = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const getPos = (clientX: number, clientY: number) => {
     const rect = canvasRef.current!.getBoundingClientRect()
     const scaleX = canvasRef.current!.width / rect.width
     const scaleY = canvasRef.current!.height / rect.height
     return {
-      x: (e.clientX - rect.left) * scaleX,
-      y: (e.clientY - rect.top) * scaleY,
+      x: (clientX - rect.left) * scaleX,
+      y: (clientY - rect.top) * scaleY,
     }
   }
 
-  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const startDrawing = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    ;(e.target as Element).setPointerCapture(e.pointerId)
     const ctx = canvasRef.current!.getContext("2d")!
     ctx.strokeStyle = strokeColor
     ctx.lineWidth = strokeSize
-    const pos = getPos(e)
+    const pos = getPos(e.clientX, e.clientY)
     ctx.beginPath()
     ctx.moveTo(pos.x, pos.y)
     setIsDrawing(true)
   }
 
-  const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const draw = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (!isDrawing) return
     const ctx = canvasRef.current!.getContext("2d")!
-    const pos = getPos(e)
+    const pos = getPos(e.clientX, e.clientY)
     ctx.lineTo(pos.x, pos.y)
     ctx.stroke()
     setHasContent(true)
@@ -237,12 +238,12 @@ export function SignaturePad({ onSave, onCancel }: SignaturePadProps) {
                   ref={canvasRef}
                   width={920}
                   height={400}
-                  className="cursor-crosshair w-full"
+                  className="cursor-crosshair w-full touch-none"
                   style={{ height: "200px" }}
-                  onMouseDown={startDrawing}
-                  onMouseMove={draw}
-                  onMouseUp={stopDrawing}
-                  onMouseLeave={stopDrawing}
+                  onPointerDown={startDrawing}
+                  onPointerMove={draw}
+                  onPointerUp={stopDrawing}
+                  onPointerLeave={stopDrawing}
                 />
               </div>
               <div className="flex items-center gap-3 mb-3">
@@ -259,7 +260,7 @@ export function SignaturePad({ onSave, onCancel }: SignaturePadProps) {
                         onClick={() => setStrokeSize(size)}
                         className={`h-8 w-8 rounded-lg flex items-center justify-center cursor-pointer transition-colors ${
                           strokeSize === size
-                            ? "bg-accent ring-1 ring-ring"
+                            ? "bg-secondary text-secondary-foreground"
                             : "hover:bg-accent/50"
                         }`}
                       >

@@ -145,28 +145,30 @@ export function PDFViewer({
   }, [annotations, currentPage, canvasSize, scale, currentPath, drawColor, currentHighlightPath, highlightColor, penSize])
 
   const getCoords = useCallback(
-    (e: React.MouseEvent) => {
+    (clientX: number, clientY: number) => {
       const rect = overlayRef.current!.getBoundingClientRect()
       return {
-        x: (e.clientX - rect.left) / scale,
-        y: (e.clientY - rect.top) / scale,
+        x: (clientX - rect.left) / scale,
+        y: (clientY - rect.top) / scale,
       }
     },
     [scale]
   )
 
-  const handleMouseDown = useCallback(
-    (e: React.MouseEvent) => {
+  const handlePointerDown = useCallback(
+    (e: React.PointerEvent) => {
       if (pendingSignature) return
 
-      const coords = getCoords(e)
+      const coords = getCoords(e.clientX, e.clientY)
 
       if (activeTool === "draw") {
         setIsDrawing(true)
         setCurrentPath([coords])
+        ;(e.target as Element).setPointerCapture(e.pointerId)
       } else if (activeTool === "highlight") {
         setIsDrawing(true)
         setCurrentHighlightPath([coords])
+        ;(e.target as Element).setPointerCapture(e.pointerId)
       } else if (activeTool === "text") {
         onRequestTextEditor(coords.x, coords.y)
       } else if (activeTool === "signature") {
@@ -176,10 +178,10 @@ export function PDFViewer({
     [activeTool, pendingSignature, getCoords, onRequestSignature, onRequestTextEditor]
   )
 
-  const handleMouseMove = useCallback(
-    (e: React.MouseEvent) => {
+  const handlePointerMove = useCallback(
+    (e: React.PointerEvent) => {
       if (!isDrawing) return
-      const coords = getCoords(e)
+      const coords = getCoords(e.clientX, e.clientY)
 
       if (activeTool === "draw") {
         setCurrentPath((prev) => [...prev, coords])
@@ -190,8 +192,8 @@ export function PDFViewer({
     [isDrawing, activeTool, getCoords]
   )
 
-  const handleMouseUp = useCallback(
-    (_e: React.MouseEvent) => {
+  const handlePointerUp = useCallback(
+    () => {
       if (!isDrawing) return
       setIsDrawing(false)
 
@@ -217,7 +219,7 @@ export function PDFViewer({
         setCurrentHighlightPath([])
       }
     },
-    [isDrawing, activeTool, currentPage, currentPath, drawColor, currentHighlightPath, highlightColor, penSize, getCoords, onAddAnnotation]
+    [isDrawing, activeTool, currentPage, currentPath, drawColor, currentHighlightPath, highlightColor, penSize, onAddAnnotation]
   )
 
   const handleSignatureConfirm = useCallback(
@@ -254,17 +256,17 @@ export function PDFViewer({
   return (
     <div
       ref={containerRef}
-      className="flex-1 overflow-auto bg-background flex items-start justify-center p-8"
+      className="flex-1 overflow-auto bg-background flex items-start justify-center p-2 pb-28 sm:p-8 md:pb-8"
     >
       <div className="relative shadow-lg" style={{ width: canvasSize.width, height: canvasSize.height }}>
         <canvas ref={canvasRef} className="absolute top-0 left-0" />
         <canvas
           ref={overlayRef}
-          className={`absolute top-0 left-0 ${cursorClass}`}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={() => {
+          className={`absolute top-0 left-0 touch-none ${cursorClass}`}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerLeave={() => {
             if (isDrawing && activeTool === "draw") {
               setIsDrawing(false)
               if (currentPath.length > 1) {

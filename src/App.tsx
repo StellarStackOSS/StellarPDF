@@ -149,8 +149,7 @@ export default function App() {
       e.preventDefault()
       setIsDragging(false)
       const file = e.dataTransfer.files[0]
-      const supported = ["application/pdf", "image/jpeg", "image/png", "image/webp"]
-      if (file && supported.includes(file.type)) {
+      if (file && file.type === "application/pdf") {
         openFile(file)
       }
     },
@@ -236,7 +235,7 @@ export default function App() {
       <input
         ref={fileInputRef}
         type="file"
-        accept="application/pdf,image/jpeg,image/png,image/webp"
+        accept="application/pdf"
         className="hidden"
         onChange={handleFileChange}
       />

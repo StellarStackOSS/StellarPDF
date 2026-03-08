@@ -11,6 +11,8 @@
     "start": "serve dist -s -l tcp://0.0.0.0:${PORT:-3000}"
   },
   "dependencies": {
+    "@radix-ui/react-popover": "^1.1.15",
+    "@radix-ui/react-tooltip": "^1.2.8",
     "@tailwindcss/vite": "^4.2.1",
     "@tiptap/extension-color": "^3.20.1",
     "@tiptap/extension-highlight": "^3.20.1",
@@ -32,7 +34,8 @@
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "tailwind-merge": "^3.5.0",
-    "tailwindcss": "^4.2.1"
+    "tailwindcss": "^4.2.1",
+    "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",

@@ -412,7 +412,7 @@ export function LandingPage({ onOpenFile, isDragging, isDark, onToggleTheme }: L
                 },
                 {
                   q: "Does it work on mobile?",
-                  a: "StellarPDF is optimized for desktop browsers. Mobile support is on the roadmap for a future release.",
+                  a: "Yes! StellarPDF supports touch interactions for drawing, highlighting, signing, and navigating documents on mobile devices and tablets.",
                 },
                 {
                   q: "How do I contribute?",
