@@ -5,7 +5,12 @@ import { VitePWA } from 'vite-plugin-pwa'
 import { execSync } from 'child_process'
 import path from 'path'
 
-const commitHash = execSync('git rev-parse --short HEAD').toString().trim()
+let commitHash = 'dev'
+try {
+  commitHash = execSync('git rev-parse --short HEAD').toString().trim()
+} catch {
+  // Not a git repo (e.g. CI/Docker) — use fallback
+}
 
 export default defineConfig({
   define: {
