@@ -14,13 +14,20 @@ import {
   Moon,
   Type,
   ChevronDown,
+  FileImage,
+  FileVideo,
+  FileAudio,
+  ArrowRight,
 } from "lucide-react"
+
+type AppMode = "home" | "pdf" | "image" | "video" | "audio"
 
 interface LandingPageProps {
   onOpenFile: () => void
   isDragging: boolean
   isDark: boolean
   onToggleTheme: () => void
+  onNavigate: (mode: AppMode) => void
 }
 
 function FAQItem({ question, answer, index }: { question: string; answer: string; index: number }) {
@@ -112,7 +119,7 @@ const featureSections = [
   },
 ]
 
-export function LandingPage({ onOpenFile, isDragging, isDark, onToggleTheme }: LandingPageProps) {
+export function LandingPage({ onOpenFile, isDragging, isDark, onToggleTheme, onNavigate }: LandingPageProps) {
   const [showModal, setShowModal] = useState<"tos" | "privacy" | null>(null)
 
   return (
@@ -223,9 +230,9 @@ export function LandingPage({ onOpenFile, isDragging, isDark, onToggleTheme }: L
             transition={{ duration: 0.7, ease: "easeOut" }}
             className="max-w-4xl font-serif text-5xl font-light leading-[1.1] tracking-tight md:text-7xl md:leading-[1.08] gradient-text"
           >
-            Read, edit & sign
+            Edit, convert & transform
             <br className="hidden md:block" />{" "}
-            your PDFs — beautifully,
+            your files — beautifully,
             <br className="hidden md:block" />{" "}
             privately, for free
           </motion.h1>
@@ -237,51 +244,81 @@ export function LandingPage({ onOpenFile, isDragging, isDark, onToggleTheme }: L
             className="mt-7 max-w-2xl text-lg leading-relaxed md:text-xl"
             style={{ color: isDark ? "#a3a3a3" : "#737373" }}
           >
-            A powerful PDF tool that runs entirely in your browser. No sign-ups,
-            no uploads, no subscriptions. Open source and free — always.
+            PDF editing, plus image, video & audio conversion — all in your browser.
+            No sign-ups, no uploads, no subscriptions. Open source and free — always.
           </motion.p>
 
+          {/* Tool cards */}
           <motion.div
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.6, delay: 0.4, ease: "easeOut" }}
-            className="mt-10 flex flex-wrap items-center justify-center gap-4"
+            className="mt-10 grid grid-cols-2 gap-3 w-full max-w-2xl md:grid-cols-4"
           >
-            <button
-              onClick={onOpenFile}
-              className="flex items-center gap-2 rounded-full px-7 py-2.5 text-sm font-semibold cursor-pointer transition-colors"
-              style={{
-                backgroundColor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.08)",
-                color: isDark ? "#d4d4d4" : "#333",
-              }}
-            >
-              <FileUp className="h-4 w-4" />
-              Open a PDF
-            </button>
+            {[
+              { mode: "pdf" as AppMode, icon: FileText, label: "PDF Editor", desc: "Annotate, sign & export", onClick: onOpenFile },
+              { mode: "image" as AppMode, icon: FileImage, label: "Image Converter", desc: "JPG · PNG · WebP · GIF · AVIF…" },
+              { mode: "video" as AppMode, icon: FileVideo, label: "Video Converter", desc: "MP4 · WebM · GIF · MKV…" },
+              { mode: "audio" as AppMode, icon: FileAudio, label: "Audio Converter", desc: "MP3 · WAV · FLAC · OGG…" },
+            ].map((tool, i) => (
+              <motion.button
+                key={tool.mode}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.45 + i * 0.06 }}
+                onClick={tool.onClick ?? (() => onNavigate(tool.mode))}
+                className="group relative flex flex-col items-start gap-3 rounded-2xl p-4 text-left cursor-pointer transition-all"
+                style={{
+                  backgroundColor: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)",
+                  border: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)"}`,
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)"
+                  e.currentTarget.style.borderColor = isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.14)"
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)"
+                  e.currentTarget.style.borderColor = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)"
+                }}
+              >
+                <div
+                  className="flex h-9 w-9 items-center justify-center rounded-xl"
+                  style={{ backgroundColor: isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.06)" }}
+                >
+                  <tool.icon className="h-4 w-4" style={{ color: isDark ? "#d4d4d4" : "#555" }} />
+                </div>
+                <div>
+                  <p className="text-sm font-medium" style={{ color: isDark ? "#fff" : "#111" }}>{tool.label}</p>
+                  <p className="mt-0.5 text-xs leading-relaxed" style={{ color: isDark ? "#525252" : "#a3a3a3" }}>{tool.desc}</p>
+                </div>
+                <ArrowRight className="absolute bottom-4 right-4 h-3.5 w-3.5 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: isDark ? "#a3a3a3" : "#737373" }} />
+              </motion.button>
+            ))}
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.75 }}
+            className="mt-5 flex items-center gap-4"
+          >
             <a
               href="https://github.com/StellarStackOSS/StellarPDF"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 rounded-full border px-7 py-2.5 text-sm font-semibold transition-colors"
+              className="flex items-center gap-2 rounded-full border px-5 py-1.5 text-xs font-medium transition-colors"
               style={{
-                borderColor: isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.12)",
-                color: isDark ? "#fff" : "#333",
+                borderColor: isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.1)",
+                color: isDark ? "#a3a3a3" : "#737373",
               }}
             >
-              <Github className="h-4 w-4" />
+              <Github className="h-3.5 w-3.5" />
               Star on GitHub
             </a>
+            <p className="text-xs" style={{ color: isDark ? "#525252" : "#a3a3a3" }}>
+              Powered by FFmpeg WASM &mdash; your files never leave the browser
+            </p>
           </motion.div>
-
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.6 }}
-            className="mt-5 text-xs"
-            style={{ color: isDark ? "#525252" : "#a3a3a3" }}
-          >
-            Works in any modern browser &mdash; no installation required
-          </motion.p>
         </section>
 
         {/* Features */}

@@ -12,9 +12,24 @@ try {
   // Not a git repo (e.g. CI/Docker) — use fallback
 }
 
+const coopCoepHeaders = {
+  'Cross-Origin-Opener-Policy': 'same-origin',
+  'Cross-Origin-Embedder-Policy': 'require-corp',
+}
+
 export default defineConfig({
   define: {
     __COMMIT_HASH__: JSON.stringify(commitHash),
+  },
+  server: { headers: coopCoepHeaders },
+  preview: { headers: coopCoepHeaders },
+  optimizeDeps: {
+    // Excluding these prevents Vite from pre-bundling them into .vite/deps/.
+    // @ffmpeg/ffmpeg creates its Worker via `new Worker(new URL('./worker.js', import.meta.url))`.
+    // When pre-bundled, import.meta.url resolves to the deps bundle path and the Worker URL
+    // becomes /.vite/deps/worker.js (which doesn't exist), causing ff.load() to hang silently.
+    // Excluding keeps the raw ESM files intact so the relative Worker URL resolves correctly.
+    exclude: ['@ffmpeg/ffmpeg', '@ffmpeg/util'],
   },
   plugins: [
     react(),

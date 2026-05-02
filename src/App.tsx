@@ -11,6 +11,11 @@ import { ConfirmDialog } from "@/components/ConfirmDialog"
 import { exportToDocx } from "@/lib/export-docx"
 import { saveAs } from "file-saver"
 import { Loader2 } from "lucide-react"
+import { ImageConverter } from "@/components/ImageConverter"
+import { VideoConverter } from "@/components/VideoConverter"
+import { AudioConverter } from "@/components/AudioConverter"
+
+type AppMode = "home" | "pdf" | "image" | "video" | "audio"
 
 declare const __COMMIT_HASH__: string
 
@@ -54,12 +59,17 @@ export default function App() {
   const [showCloseConfirm, setShowCloseConfirm] = useState(false)
   const [pendingAction, setPendingAction] = useState<"close" | "open" | null>(null)
   const [isDark, setIsDark] = useState(true)
+  const [appMode, setAppMode] = useState<AppMode>("home")
 
   // Text editing state
   const [showTextEditor, setShowTextEditor] = useState(false)
   const [textPlacement, setTextPlacement] = useState<{ x: number; y: number } | null>(null)
   const [pendingText, setPendingText] = useState<({ type: "text" } & TextAnnotation) | null>(null)
   const [editingTextAnnotation, setEditingTextAnnotation] = useState<({ type: "text" } & TextAnnotation) | null>(null)
+
+  // Sync appMode with PDF state
+  useEffect(() => { if (pdf) setAppMode("pdf") }, [pdf])
+  useEffect(() => { if (!pdf && appMode === "pdf") setAppMode("home") }, [pdf, appMode])
 
   // Apply theme class to document
   useEffect(() => {
@@ -253,6 +263,10 @@ export default function App() {
     setShowTextEditor(true)
   }, [])
 
+  if (appMode === "image") return <ImageConverter isDark={isDark} onBack={() => setAppMode("home")} onToggleTheme={handleToggleTheme} />
+  if (appMode === "video") return <VideoConverter isDark={isDark} onBack={() => setAppMode("home")} onToggleTheme={handleToggleTheme} />
+  if (appMode === "audio") return <AudioConverter isDark={isDark} onBack={() => setAppMode("home")} onToggleTheme={handleToggleTheme} />
+
   return (
     <div
       className="h-screen flex flex-col"
@@ -309,7 +323,7 @@ export default function App() {
 
       <AnimatePresence mode="wait">
         {!pdf ? (
-          <LandingPage key="empty" onOpenFile={handleOpenFile} isDragging={isDragging} isDark={isDark} onToggleTheme={handleToggleTheme} />
+          <LandingPage key="empty" onOpenFile={handleOpenFile} isDragging={isDragging} isDark={isDark} onToggleTheme={handleToggleTheme} onNavigate={setAppMode} />
         ) : !viewerReady ? (
           <motion.div
             key="loader"
